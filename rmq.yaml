@@ -1,0 +1,25 @@
+version: '3.4'
+services:
+  rabbitmq:
+    image: rabbitmq:3.11.15-management
+    hostname: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=justatom
+      - RABBITMQ_DEFAULT_PASS=fate
+    ports:
+      - 15672:15672
+      - 5672:5672
+    restart: always
+    volumes:
+      - rabbitmqdb:/var/lib/rabbitmq
+  redis:
+    image: redis:latest
+    volumes:
+      - ./redis.conf:/redis.conf
+    ports:
+      - '6379:6379'
+    command: [ "redis-server", "/redis.conf" ]
+
+
+volumes:
+  rabbitmqdb:
