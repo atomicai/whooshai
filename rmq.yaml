@@ -19,7 +19,15 @@ services:
     ports:
       - '6379:6379'
     command: [ "redis-server", "/redis.conf" ]
+  rethink:
+    image: rethinkdb:2.4
+    ports:
+      - "8080:8080"
+      - "28015:28015"
+    volumes:
+      - rethinkdb:/apps/rethinkdb/data
 
 
 volumes:
   rabbitmqdb:
+  rethinkdb:
