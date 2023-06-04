@@ -6,6 +6,7 @@ wandb/
 
 # OSX
 .DS_Store/*
+.DS_Store
 
 # Jupyter Notebook ckpt
 .ipynb_checkpoints/*
