@@ -32,7 +32,7 @@ run:
 	gunicorn -k gevent -w 4 -b 127.0.0.1:4321  whooshai.tdk.rises:app
 
 stop:
-	celery -A whooshai.tdk.fire control shutdown
+	for pid in $$(ps aux | grep celery | grep -v grep | awk '{print $$2}'); do kill -9 "$$pid"; done
 
 test:
 	pytest test ${PYTEST_FLAGS} --testmon --suppress-no-test-exit-code
