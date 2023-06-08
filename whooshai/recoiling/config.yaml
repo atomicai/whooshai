@@ -1,0 +1,13 @@
+epochs: 22
+lr: 0.005
+weight_decay: 0.0005
+hidden: 8
+layers: 1
+nheads: [8, 1]
+alpha: 0.2
+var_it: 1
+dropout: 0.60
+patience: 50
+dataset: pubmed
+use_bn: False
+warmup: 500
