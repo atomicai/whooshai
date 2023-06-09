@@ -11,6 +11,7 @@ import numpy as np
 import scipy.sparse as sp
 import torch
 import torch.optim as optim
+from typing import Dict
 import yaml
 
 # from models_spagat import SpaGAT
@@ -216,4 +217,80 @@ def inference():
     return response
 
 
-__all__ = ["train", "inference"]
+def graph_tool_apsp(spmatrix, cutoff=3):
+    nodeN = spmatrix.shape[0] # кол-во вершин
+    edgeN = spmatrix.data.shape[0]  # кол-во ребер
+    weightM = spmatrix.data # Массив весов графа. в разреженной форме 
+    print(nodeN, edgeN)
+
+    t = time.time()
+    g = g_gen.Graph()
+    g.add_vertex(nodeN)
+    row = spmatrix.row.reshape(-1, 1)
+    col = spmatrix.col.reshape(-1, 1)
+    edge_list = np.hstack((row, col)).tolist()
+    g.add_edge_list(edge_list)
+
+    weights = g.new_edge_property("double")
+    print()
+    for i in range(edgeN):
+        # weights[row[i][0], col[i][0]] = weightM[i]
+        weights.fa[i] = weightM[i]
+        # weights[g.vertex(row[i]), g.vertex(col[i])] = weightM[i]
+    print("construct time: {:.4f}".format(time.time() - t))
+
+class Inferencer:
+
+    def __init__(self):
+        with open(str(Path(os.getcwd()) / "whooshai" / "recoiling" / "config.yaml")) as f:
+            config = yaml.safe_load(f)
+        adj, features, labels, idx_train, idx_val, idx_test = load_data()
+        self.model = SpaGAT(
+            nfeat=features.shape[1],
+            nhid=config["hidden"],
+            nclass=labels.max().item() + 1,
+            dropout=config["dropout"],
+            alpha=config["alpha"],
+            nheads=config["nheads"],
+        )
+        self.model.load_state_dict(torch.load(str(Path(os.getcwd()) / "weights" / "zaeleillaep.pkl")))
+    
+        self.genPath = str(Path(os.getcwd()) / "weights" / "att")
+        self.num_vertices = 10_000
+        self.nheads = [8]
+    
+    def inference_from_dicts(self, query: Dict):
+        x, y = query["lat"], query["lon"]
+
+        for layer, nhead in enumerate(self.nheads):
+            # if layer>0:
+            #    continue
+            headPathM = {}
+            headMatrix = None
+            for head in range(nhead):
+                spmatrix = sp.load_npz(self.genPath + '/attmat_{:d}_{:d}.npz'.format(layer + 1, head))
+                if headMatrix is None:
+                    headMatrix = spmatrix
+                else:
+                    headMatrix.data += spmatrix.data
+            headMatrix.data = headMatrix.data / nhead
+
+            headMatrix.data = -headMatrix.data  # Развернем граф (ij -> ji) чтобы удобнее считать пути до текущей
+            headMatrix.setdiag(0)  # not include self attention weight
+
+            attMin = min(headMatrix.data)
+            attMax = max(headMatrix.data)
+            headMatrix.data = (headMatrix.data - attMin) / (attMax - attMin)
+
+            print(min(headMatrix.data), max(headMatrix.data))
+            # TODO:
+            nodeN = headMatrix.shape[0]  # кол-во вершин
+            edgeN = headMatrix.data.shape[0]  # кол-во ребер
+            weightM = headMatrix.data
+            # TODO: perform update to rethinkdb
+            lil = headMatrix.tolil()
+            for _idx in range(self.num_vertices):
+                np.nonzero(lil[_idx].toarray().squeeze())
+            print()
+
+__all__ = ["train", "inference", "Inferencer"]
