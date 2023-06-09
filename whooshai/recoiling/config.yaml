@@ -11,3 +11,4 @@ patience: 50
 dataset: pubmed
 use_bn: False
 warmup: 500
+nodes: 10000

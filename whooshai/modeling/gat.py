@@ -113,6 +113,7 @@ class SpGraphAttentionLayer(nn.Module):
 
                 scisp = convert.to_scipy_sparse_matrix(edge, p_a_e, N)
                 # TODO: В процессе самого forward_pass - пересохраняем веса всего графа в сжатом виде.
+                (Path(os.getcwd()) / "weights" / "att").mkdir(parents=True, exist_ok=True)
                 scipy.sparse.save_npz(str(Path(os.getcwd()) / "weights" / "att" / f'attmat_{self.layerN}'), scisp)
 
         edge_e = torch.exp(edge_e_a - torch.max(edge_e_a))  # edge_e: E
