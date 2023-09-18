@@ -28,8 +28,14 @@ format-fix:
 	autoflake ${FLAKE_FLAGS} ${NAME} whooshai test
 
 run:
-	celery -A whooshai.tdk.fire worker --loglevel=info --detach
+	celery -A whooshai.tdk.fire.flow worker -P gevent --loglevel=info --detach
 	gunicorn -k gevent -w 4 -b 127.0.0.1:4321  whooshai.tdk.rises:app
+
+rises:
+	gunicorn -k gevent -w 4 -b 127.0.0.1:4321  whooshai.tdk.rises:app
+
+fire:
+	celery -A whooshai.tdk.fire.flow worker -P gevent --concurrency=4 --loglevel=info
 
 stop:
 	for pid in $$(ps aux | grep celery | grep -v grep | awk '{print $$2}'); do kill -9 "$$pid"; done
